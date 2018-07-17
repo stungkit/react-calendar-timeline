@@ -55,7 +55,7 @@ export const minCellWidth = 17
 
 export function getMinUnit(zoom, width, timeSteps) {
   // for supporting weeks, its important to remember that each of these
-  // units has a national progression to the other. i.e. a year is 12 months
+  // units has a natural progression to the other. i.e. a year is 12 months
   // a month is 24 days, a day is 24 hours.
   // with weeks this isnt the case so weeks needs to be handled specially
   let timeDividers = {
@@ -124,7 +124,6 @@ export function calculateDimensions({
   canvasTimeStart,
   canvasTimeEnd,
   canvasWidth,
-  dragSnap,
   dragTime,
   resizingEdge,
   resizeTime
@@ -134,31 +133,23 @@ export function calculateDimensions({
   const itemEnd =
     isResizing && resizingEdge === 'right' ? resizeTime : itemTimeEnd
 
-  let x = isDragging ? dragTime : itemStart
+  const itemTimeRange = itemEnd - itemStart
 
-  let w = Math.max(itemEnd - itemStart, dragSnap)
-
-  let collisionX = itemStart
-  let collisionW = w
-
-  if (isDragging) {
-    if (itemTimeStart >= dragTime) {
-      collisionX = dragTime
-      collisionW = Math.max(itemTimeEnd - dragTime, dragSnap)
-    } else {
-      collisionW = Math.max(dragTime - itemTimeStart + w, dragSnap)
-    }
-  }
+  let newItemStart = isDragging ? dragTime : itemStart
 
   const ratio =
     1 / coordinateToTimeRatio(canvasTimeStart, canvasTimeEnd, canvasWidth)
 
+  // restrict startTime and endTime to be bounded by canvasTimeStart and canasTimeEnd
+  const effectiveStartTime = Math.max(itemStart, canvasTimeStart)
+  const effectiveEndTime = Math.min(itemEnd, canvasTimeEnd)
+  const itemWidth = (effectiveEndTime - effectiveStartTime) * ratio
+
   const dimensions = {
-    left: (x - canvasTimeStart) * ratio,
-    width: Math.max(w * ratio, 3),
-    collisionLeft: collisionX,
-    originalLeft: itemTimeStart,
-    collisionWidth: collisionW
+    left: Math.max(newItemStart - canvasTimeStart, 0) * ratio,
+    width: Math.max(itemWidth, 3),
+    collisionLeft: newItemStart,
+    collisionWidth: itemTimeRange
   }
 
   return dimensions
@@ -218,7 +209,7 @@ export function collision(a, b, lineHeight, collisionPadding = EPSILON) {
   )
 }
 
-export function stack(items, groupOrders, lineHeight, force) {
+export function stack(items, groupOrders, lineHeight) {
   var i, iMax
   var totalHeight = 0
 
@@ -226,13 +217,6 @@ export function stack(items, groupOrders, lineHeight, force) {
   var groupTops = []
 
   var groupedItems = getGroupedItems(items, groupOrders)
-
-  if (force) {
-    // reset top position of all items
-    for (i = 0, iMax = items.length; i < iMax; i++) {
-      items[i].dimensions.top = null
-    }
-  }
 
   groupedItems.forEach(function(group) {
     // calculate new, non-overlapping positions
@@ -286,7 +270,7 @@ export function stack(items, groupOrders, lineHeight, force) {
   }
 }
 
-export function nostack(items, groupOrders, lineHeight, force) {
+export function nostack(items, groupOrders, lineHeight) {
   var i, iMax
 
   var totalHeight = 0
@@ -295,13 +279,6 @@ export function nostack(items, groupOrders, lineHeight, force) {
   var groupTops = []
 
   var groupedItems = getGroupedItems(items, groupOrders)
-
-  if (force) {
-    // reset top position of all items
-    for (i = 0, iMax = items.length; i < iMax; i++) {
-      items[i].dimensions.top = null
-    }
-  }
 
   groupedItems.forEach(function(group) {
     // calculate new, non-overlapping positions

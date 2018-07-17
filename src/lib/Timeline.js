@@ -251,7 +251,14 @@ export default class ReactCalendarTimeline extends Component {
   }
 
   getTimelineContext = () => {
-    const { width, visibleTimeStart, visibleTimeEnd } = this.state
+    const {
+      width,
+      visibleTimeStart,
+      visibleTimeEnd,
+      canvasTimeStart
+    } = this.state
+    const zoom = visibleTimeEnd - visibleTimeStart
+    const canvasTimeEnd = canvasTimeStart + zoom * 3
 
     //TODO: Performance
     //prob wanna memoize this so we ensure that if no items changed,
@@ -259,7 +266,9 @@ export default class ReactCalendarTimeline extends Component {
     return {
       timelineWidth: width,
       visibleTimeStart,
-      visibleTimeEnd
+      visibleTimeEnd,
+      canvasTimeStart,
+      canvasTimeEnd
     }
   }
 
@@ -370,6 +379,7 @@ export default class ReactCalendarTimeline extends Component {
     this.scrollComponent.scrollLeft = width
   }
 
+  // FIXME: this function calls set state EVERY TIME YOU SCROLL
   onScroll = scrollX => {
     const canvasTimeStart = this.state.canvasTimeStart
 
@@ -1017,15 +1027,7 @@ export default class ReactCalendarTimeline extends Component {
       }
     }
 
-    const {
-      keys,
-      dragSnap,
-      lineHeight,
-      headerLabelGroupHeight,
-      headerLabelHeight,
-      stackItems,
-      itemHeightRatio
-    } = this.props
+    const { keys, lineHeight, stackItems, itemHeightRatio } = this.props
     const {
       draggingItem,
       dragTime,
@@ -1037,7 +1039,6 @@ export default class ReactCalendarTimeline extends Component {
     const zoom = visibleTimeEnd - visibleTimeStart
     const canvasTimeEnd = canvasTimeStart + zoom * 3
     const canvasWidth = width * 3
-    const headerHeight = headerLabelGroupHeight + headerLabelHeight
 
     const visibleItems = getVisibleItems(
       items,
@@ -1060,7 +1061,6 @@ export default class ReactCalendarTimeline extends Component {
         canvasTimeStart,
         canvasTimeEnd,
         canvasWidth,
-        dragSnap,
         dragTime,
         resizingEdge,
         resizeTime
@@ -1089,8 +1089,7 @@ export default class ReactCalendarTimeline extends Component {
     const { height, groupHeights, groupTops } = stackingMethod(
       dimensionItems,
       groupOrders,
-      lineHeight,
-      headerHeight
+      lineHeight
     )
 
     return { dimensionItems, height, groupHeights, groupTops }
